@@ -12,7 +12,8 @@ The purpose of creating the Personal Expense Tracker is twofold: to solve a prac
 
 {Provide a link to your YouTube demonstration.  It should be a one minute demo of the software running and a walkthrough of the code.}
 
-[Software Demo Video](http://youtube.link.goes.here)
+[Software Demo Video]
+https://youtu.be/SNLLg0S3kfw
 
 
 # Development Environment
