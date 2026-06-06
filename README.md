@@ -4,7 +4,7 @@
 
 Title this project
 
-Personal expese
+Personal expense
 
 Describe your purpose for creating this software.
 
@@ -13,7 +13,7 @@ The purpose of creating the Personal Expense Tracker is twofold: to solve a prac
 {Provide a link to your YouTube demonstration.  It should be a one minute demo of the software running and a walkthrough of the code.}
 
 [Software Demo Video]
-https://youtu.be/SNLLg0S3kfw
+https://youtu.be/I45POxtkkrE 
 
 
 # Development Environment
@@ -36,6 +36,6 @@ https://github.com/Yeampier2022/personal-expese
 
 {Make a list of things that you need to fix, improve, and add in the future.}
 
-- Item 1
-- Item 2
-- Item 3
+Features:
+- Integrate Firebase into the app.
+- The data must be dynamic and linked to your SQL database. 
