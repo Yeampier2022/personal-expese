@@ -1,12 +1,13 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Button, FlatList, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, SafeAreaView, StyleSheet, Text, View, Pressable } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { loadTransactions, type Transaction } from '../utils/expenseStorage';
+import { loadTransactions, Transaction } from '../utils/storage/expenseStorage';
 
 type RootStackParamList = {
   Home: undefined;
   AddExpense: undefined;
+  AddIncome: undefined;
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
@@ -62,8 +63,8 @@ export default function HomeScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerSection}>
-        <Text style={styles.title}>Personal Expense</Text>
-        <Text style={styles.subtitle}>Track your spending and stay in control.</Text>
+        <Text style={styles.title}>Finance Tracker</Text>
+        <Text style={styles.subtitle}>Track income and expenses with instant balance.</Text>
       </View>
 
       <View style={styles.balanceCard}>
@@ -81,6 +82,15 @@ export default function HomeScreen({ navigation }: Props) {
         </View>
       </View>
 
+      <View style={styles.actionRow}>
+        <Pressable style={[styles.actionButton, styles.expenseButton]} onPress={() => navigation.navigate('AddExpense')}>
+          <Text style={styles.actionButtonText}>Add Expense</Text>
+        </Pressable>
+        <Pressable style={[styles.actionButton, styles.incomeButton]} onPress={() => navigation.navigate('AddIncome')}>
+          <Text style={styles.actionButtonText}>Add Income</Text>
+        </Pressable>
+      </View>
+
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Recent Transactions</Text>
       </View>
@@ -95,14 +105,10 @@ export default function HomeScreen({ navigation }: Props) {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateText}>No transactions saved yet.</Text>
-            <Text style={styles.emptyStateSubtext}>Add your first expense to see it here.</Text>
+            <Text style={styles.emptyStateSubtext}>Agrega un ingreso o gasto para comenzar.</Text>
           </View>
         }
       />
-
-      <View style={styles.buttonContainer}>
-        <Button title="Add Expense" onPress={() => navigation.navigate('AddExpense')} />
-      </View>
     </SafeAreaView>
   );
 }
@@ -166,6 +172,30 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 16,
   },
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  expenseButton: {
+    backgroundColor: '#f97316',
+  },
+  incomeButton: {
+    backgroundColor: '#059669',
+  },
+  actionButtonText: {
+    color: '#ffffff',
+    fontWeight: '700',
+    fontSize: 15,
+  },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -176,10 +206,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#111827',
-  },
-  sectionHint: {
-    color: '#6b7280',
-    fontSize: 13,
   },
   listContent: {
     paddingBottom: 20,
@@ -242,10 +268,5 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontSize: 13,
     textAlign: 'center',
-  },
-  buttonContainer: {
-    width: '100%',
-    marginTop: 8,
-    marginBottom: 40,
   },
 });

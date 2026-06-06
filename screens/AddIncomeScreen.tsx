@@ -6,11 +6,12 @@ import { addTransaction, Transaction } from '../utils/storage/expenseStorage';
 type RootStackParamList = {
   Home: undefined;
   AddExpense: undefined;
+  AddIncome: undefined;
 };
 
-type Props = NativeStackScreenProps<RootStackParamList, 'AddExpense'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'AddIncome'>;
 
-export default function AddExpenseScreen({ navigation }: Props) {
+export default function AddIncomeScreen({ navigation }: Props) {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
   const [amount, setAmount] = useState('');
@@ -37,17 +38,17 @@ export default function AddExpenseScreen({ navigation }: Props) {
           id: Date.now().toString(),
           title: title.trim(),
           category: category.trim(),
-          amount: -parsedAmount,
+          amount: parsedAmount,
           date: new Date().toLocaleString(),
-          isExpense: true,
+          isExpense: false,
         })
       );
 
-      Alert.alert('Saved', 'Your expense was saved locally.');
+      Alert.alert('Saved', 'Your income was saved locally.');
       navigation.goBack();
     } catch (error) {
-      console.error('Failed to save expense', error);
-      Alert.alert('Error', 'We could not save the expense. Please try again.');
+      console.error('Failed to save income', error);
+      Alert.alert('Error', 'We could not save the income. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -55,8 +56,8 @@ export default function AddExpenseScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Add Expense</Text>
-      <Text style={styles.subtitle}>Create a new expense entry and save it locally.</Text>
+      <Text style={styles.title}>Add Income</Text>
+      <Text style={styles.subtitle}>Register a new income amount and keep your balance updated.</Text>
 
       <View style={styles.formCard}>
         <Text style={styles.label}>Title</Text>
@@ -64,7 +65,7 @@ export default function AddExpenseScreen({ navigation }: Props) {
           style={styles.input}
           value={title}
           onChangeText={setTitle}
-          placeholder="Coffee"
+          placeholder="Salary"
           placeholderTextColor="#9ca3af"
           autoCapitalize="words"
         />
@@ -74,7 +75,7 @@ export default function AddExpenseScreen({ navigation }: Props) {
           style={styles.input}
           value={category}
           onChangeText={setCategory}
-          placeholder="Food"
+          placeholder="Salary"
           placeholderTextColor="#9ca3af"
           autoCapitalize="words"
         />
@@ -84,13 +85,13 @@ export default function AddExpenseScreen({ navigation }: Props) {
           style={styles.input}
           value={amount}
           onChangeText={setAmount}
-          placeholder="12.50"
+          placeholder="2500.00"
           placeholderTextColor="#9ca3af"
           keyboardType="decimal-pad"
         />
 
         <View style={styles.buttonContainer}>
-          <Button title={saving ? 'Saving...' : 'Save Expense'} onPress={handleSave} disabled={saving} />
+          <Button title={saving ? 'Saving...' : 'Save Income'} onPress={handleSave} disabled={saving} />
         </View>
       </View>
 

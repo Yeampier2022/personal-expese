@@ -1,13 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
-
-export type Transaction = {
-  id: string;
-  title: string;
-  category: string;
-  amount: number;
-  date: string;
-  isExpense: boolean;
-};
+import { Transaction, TransactionProps } from '../models/Transaction';
+export { Transaction, TransactionProps } from '../models/Transaction';
 
 const STORAGE_ROOT = FileSystem.documentDirectory ?? FileSystem.cacheDirectory;
 
@@ -26,9 +19,9 @@ export async function loadTransactions(): Promise<Transaction[]> {
     }
 
     const raw = await FileSystem.readAsStringAsync(STORAGE_PATH);
-    const parsed = JSON.parse(raw) as Transaction[];
+    const parsed = JSON.parse(raw) as TransactionProps[];
 
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? parsed.map(Transaction.fromJSON) : [];
   } catch (error) {
     console.error('Failed to load transactions', error);
     return [];
@@ -36,10 +29,12 @@ export async function loadTransactions(): Promise<Transaction[]> {
 }
 
 export async function saveTransactions(transactions: Transaction[]): Promise<void> {
-  await FileSystem.writeAsStringAsync(STORAGE_PATH, JSON.stringify(transactions));
+  await FileSystem.writeAsStringAsync(STORAGE_PATH, JSON.stringify(transactions.map((transaction) => transaction.toJSON())));
 }
 
 export async function addTransaction(transaction: Transaction): Promise<void> {
+  transaction.validate();
+
   const currentTransactions = await loadTransactions();
   const updatedTransactions = [transaction, ...currentTransactions];
 

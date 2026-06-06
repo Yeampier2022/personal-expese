@@ -31,3 +31,11 @@ Typescript
 {Make a list of websites that you found helpful in this project}
 https://github.com/Yeampier2022/personal-expese
 * [Web Site Name](http://url.link.goes.here)
+
+# Future Work
+
+{Make a list of things that you need to fix, improve, and add in the future.}
+
+- Item 1
+- Item 2
+- Item 3
