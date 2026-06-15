@@ -1,24 +1,42 @@
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, SafeAreaView, StyleSheet, Text, View, Pressable } from 'react-native';
+import { Alert, FlatList, SafeAreaView, StyleSheet, Text, View, Pressable } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { loadTransactions, Transaction } from '../utils/storage/expenseStorage';
+import { getTransactions, deleteTransaction, FirestoreTransaction } from '../firebase/firestoreService';
 
 type RootStackParamList = {
   Home: undefined;
   AddExpense: undefined;
   AddIncome: undefined;
+  EditTransaction: { transaction: FirestoreTransaction };
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 export default function HomeScreen({ navigation }: Props) {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<FirestoreTransaction[]>([]);
 
   const refreshTransactions = useCallback(async () => {
-    const savedTransactions = await loadTransactions();
-    setTransactions(savedTransactions);
+    const saved = await getTransactions();
+    setTransactions(saved);
   }, []);
+
+  const handleDelete = useCallback(
+    (item: FirestoreTransaction) => {
+      Alert.alert('Delete', `Delete "${item.title}"?`, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteTransaction(item.firestoreId);
+            await refreshTransactions();
+          },
+        },
+      ]);
+    },
+    [refreshTransactions]
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -47,16 +65,26 @@ export default function HomeScreen({ navigation }: Props) {
     );
   }, [transactions]);
 
-  const renderTransaction = ({ item }: { item: Transaction }) => (
+  const renderTransaction = ({ item }: { item: FirestoreTransaction }) => (
     <View style={styles.transactionCard}>
       <View style={styles.transactionInfo}>
         <Text style={styles.transactionTitle}>{item.title}</Text>
         <Text style={styles.transactionCategory}>{item.category}</Text>
         <Text style={styles.transactionDate}>{item.date}</Text>
       </View>
-      <Text style={[styles.transactionAmount, item.isExpense ? styles.expense : styles.income]}>
-        {item.isExpense ? '-' : '+'}${Math.abs(item.amount).toFixed(2)}
-      </Text>
+      <View style={styles.transactionRight}>
+        <Text style={[styles.transactionAmount, item.isExpense ? styles.expense : styles.income]}>
+          {item.isExpense ? '-' : '+'}${Math.abs(item.amount).toFixed(2)}
+        </Text>
+        <View style={styles.actionButtons}>
+          <Pressable style={styles.editButton} onPress={() => navigation.navigate('EditTransaction', { transaction: item })}>
+            <Text style={styles.editButtonText}>✎</Text>
+          </Pressable>
+          <Pressable style={styles.deleteButton} onPress={() => handleDelete(item)}>
+            <Text style={styles.deleteButtonText}>✕</Text>
+          </Pressable>
+        </View>
+      </View>
     </View>
   );
 
@@ -239,9 +267,39 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#9ca3af',
   },
+  transactionRight: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
   transactionAmount: {
     fontSize: 16,
     fontWeight: '800',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  editButton: {
+    backgroundColor: '#dbeafe',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  editButtonText: {
+    color: '#2563eb',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  deleteButton: {
+    backgroundColor: '#fee2e2',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  deleteButtonText: {
+    color: '#dc2626',
+    fontSize: 12,
+    fontWeight: '700',
   },
   income: {
     color: '#059669',

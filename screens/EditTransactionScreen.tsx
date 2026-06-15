@@ -1,19 +1,23 @@
 import { useState } from 'react';
-import { Alert, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Button, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { createTransaction } from '../firebase/firestoreService';
+import { updateTransaction, FirestoreTransaction } from '../firebase/firestoreService';
 
 type RootStackParamList = {
   Home: undefined;
   AddExpense: undefined;
+  AddIncome: undefined;
+  EditTransaction: { transaction: FirestoreTransaction };
 };
 
-type Props = NativeStackScreenProps<RootStackParamList, 'AddExpense'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'EditTransaction'>;
 
-export default function AddExpenseScreen({ navigation }: Props) {
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('');
-  const [amount, setAmount] = useState('');
+export default function EditTransactionScreen({ navigation, route }: Props) {
+  const { transaction } = route.params;
+
+  const [title, setTitle] = useState(transaction.title);
+  const [category, setCategory] = useState(transaction.category);
+  const [amount, setAmount] = useState(Math.abs(transaction.amount).toString());
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -32,19 +36,17 @@ export default function AddExpenseScreen({ navigation }: Props) {
     setSaving(true);
 
     try {
-      await createTransaction({
+      await updateTransaction(transaction.firestoreId, {
         title: title.trim(),
         category: category.trim(),
-        amount: -parsedAmount,
-        date: new Date().toLocaleString(),
-        isExpense: true,
+        amount: transaction.isExpense ? -parsedAmount : parsedAmount,
       });
 
-      Alert.alert('Saved', 'Your expense was saved.');
+      Alert.alert('Updated', 'Transaction updated successfully.');
       navigation.goBack();
     } catch (error) {
-      console.error('Failed to save expense', error);
-      Alert.alert('Error', 'We could not save the expense. Please try again.');
+      console.error('Failed to update transaction', error);
+      Alert.alert('Error', 'Could not update the transaction. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -52,8 +54,8 @@ export default function AddExpenseScreen({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Add Expense</Text>
-      <Text style={styles.subtitle}>Create a new expense entry.</Text>
+      <Text style={styles.title}>Edit {transaction.isExpense ? 'Expense' : 'Income'}</Text>
+      <Text style={styles.subtitle}>Update the details of this transaction.</Text>
 
       <View style={styles.formCard}>
         <Text style={styles.label}>Title</Text>
@@ -61,7 +63,6 @@ export default function AddExpenseScreen({ navigation }: Props) {
           style={styles.input}
           value={title}
           onChangeText={setTitle}
-          placeholder="Coffee"
           placeholderTextColor="#9ca3af"
           autoCapitalize="words"
         />
@@ -71,7 +72,6 @@ export default function AddExpenseScreen({ navigation }: Props) {
           style={styles.input}
           value={category}
           onChangeText={setCategory}
-          placeholder="Food"
           placeholderTextColor="#9ca3af"
           autoCapitalize="words"
         />
@@ -81,18 +81,21 @@ export default function AddExpenseScreen({ navigation }: Props) {
           style={styles.input}
           value={amount}
           onChangeText={setAmount}
-          placeholder="12.50"
           placeholderTextColor="#9ca3af"
           keyboardType="decimal-pad"
         />
 
-        <Pressable
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={saving}
-        >
-          <Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save Expense'}</Text>
-        </Pressable>
+        <View style={styles.buttonContainer}>
+          <Button
+            title={saving ? 'Saving...' : 'Save Changes'}
+            onPress={handleSave}
+            disabled={saving}
+          />
+        </View>
+      </View>
+
+      <View style={styles.secondaryButtonContainer}>
+        <Button title="Cancel" onPress={() => navigation.goBack()} />
       </View>
     </SafeAreaView>
   );
@@ -119,6 +122,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 24,
     padding: 18,
+    marginBottom: 18,
   },
   label: {
     fontSize: 14,
@@ -136,18 +140,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
     color: '#111827',
   },
-  saveButton: {
-    backgroundColor: '#dc2626',
-    borderRadius: 16,
-    paddingVertical: 14,
-    alignItems: 'center',
+  buttonContainer: {
+    width: '100%',
   },
-  saveButtonDisabled: {
-    opacity: 0.6,
-  },
-  saveButtonText: {
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 16,
+  secondaryButtonContainer: {
+    width: '100%',
   },
 });

@@ -6,11 +6,14 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from './screens/HomeScreen';
 import AddExpenseScreen from './screens/AddExpenseScreen';
 import AddIncomeScreen from './screens/AddIncomeScreen';
+import EditTransactionScreen from './screens/EditTransactionScreen';
+import { FirestoreTransaction } from './firebase/firestoreService';
 
 type RootStackParamList = {
   Home: undefined;
   AddExpense: undefined;
   AddIncome: undefined;
+  EditTransaction: { transaction: FirestoreTransaction };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -48,6 +51,11 @@ export default function App() {
             name="AddIncome"
             component={AddIncomeScreen}
             options={{ title: 'Add Income' }}
+          />
+          <Stack.Screen
+            name="EditTransaction"
+            component={EditTransactionScreen}
+            options={{ title: 'Edit Transaction' }}
           />
         </Stack.Navigator>
       </NavigationContainer>

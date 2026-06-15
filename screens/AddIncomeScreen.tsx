@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Alert, Button, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { addTransaction, Transaction } from '../utils/storage/expenseStorage';
+import { createTransaction } from '../firebase/firestoreService';
 
 type RootStackParamList = {
   Home: undefined;
@@ -33,18 +33,15 @@ export default function AddIncomeScreen({ navigation }: Props) {
     setSaving(true);
 
     try {
-      await addTransaction(
-        new Transaction({
-          id: Date.now().toString(),
-          title: title.trim(),
-          category: category.trim(),
-          amount: parsedAmount,
-          date: new Date().toLocaleString(),
-          isExpense: false,
-        })
-      );
+      await createTransaction({
+        title: title.trim(),
+        category: category.trim(),
+        amount: parsedAmount,
+        date: new Date().toLocaleString(),
+        isExpense: false,
+      });
 
-      Alert.alert('Saved', 'Your income was saved locally.');
+      Alert.alert('Saved', 'Your income was saved.');
       navigation.goBack();
     } catch (error) {
       console.error('Failed to save income', error);
@@ -57,7 +54,7 @@ export default function AddIncomeScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Add Income</Text>
-      <Text style={styles.subtitle}>Register a new income amount and keep your balance updated.</Text>
+      <Text style={styles.subtitle}>Register a new income and keep your balance updated.</Text>
 
       <View style={styles.formCard}>
         <Text style={styles.label}>Title</Text>
@@ -90,13 +87,13 @@ export default function AddIncomeScreen({ navigation }: Props) {
           keyboardType="decimal-pad"
         />
 
-        <View style={styles.buttonContainer}>
-          <Button title={saving ? 'Saving...' : 'Save Income'} onPress={handleSave} disabled={saving} />
-        </View>
-      </View>
-
-      <View style={styles.secondaryButtonContainer}>
-        <Button title="Back to Home" onPress={() => navigation.goBack()} />
+        <Pressable
+          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+          onPress={handleSave}
+          disabled={saving}
+        >
+          <Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save Income'}</Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -123,7 +120,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 24,
     padding: 18,
-    marginBottom: 18,
   },
   label: {
     fontSize: 14,
@@ -141,10 +137,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
     color: '#111827',
   },
-  buttonContainer: {
-    width: '100%',
+  saveButton: {
+    backgroundColor: '#059669',
+    borderRadius: 16,
+    paddingVertical: 14,
+    alignItems: 'center',
   },
-  secondaryButtonContainer: {
-    width: '100%',
+  saveButtonDisabled: {
+    opacity: 0.6,
+  },
+  saveButtonText: {
+    color: '#ffffff',
+    fontWeight: '700',
+    fontSize: 16,
   },
 });
