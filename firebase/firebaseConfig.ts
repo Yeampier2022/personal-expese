@@ -1,10 +1,10 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { initializeAuth, getReactNativePersistence, getAuth } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Copia estos valores desde tu consola de Firebase:
-// Firebase Console → Project Settings → General → Your apps → SDK setup
-const firebaseConfig  = {
-   apiKey: "AIzaSyAAjUnzOSFDhOnXd2gQEKKYMQLTXwtLKEs",
+const firebaseConfig = {
+  apiKey: "AIzaSyAAjUnzOSFDhOnXd2gQEKKYMQLTXwtLKEs",
   authDomain: "personal-expense-ecb65.firebaseapp.com",
   projectId: "personal-expense-ecb65",
   storageBucket: "personal-expense-ecb65.firebasestorage.app",
@@ -12,6 +12,11 @@ const firebaseConfig  = {
   appId: "1:367194377310:web:1a1fd637379b0e0f3a78cf"
 };
 
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+const isNewApp = getApps().length === 0;
+const app = isNewApp ? initializeApp(firebaseConfig) : getApp();
+
+export const auth = isNewApp
+  ? initializeAuth(app, { persistence: getReactNativePersistence(AsyncStorage) })
+  : getAuth(app);
 
 export const db = getFirestore(app);

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Alert, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { createTransaction } from '../firebase/firestoreService';
+import { auth } from '../firebase/firebaseConfig';
 
 type RootStackParamList = {
   Home: undefined;
@@ -33,19 +34,19 @@ export default function AddIncomeScreen({ navigation }: Props) {
     setSaving(true);
 
     try {
+      const userId = auth.currentUser?.uid ?? '';
       await createTransaction({
         title: title.trim(),
         category: category.trim(),
         amount: parsedAmount,
         date: new Date().toLocaleString(),
         isExpense: false,
-      });
+      }, userId);
 
       Alert.alert('Saved', 'Your income was saved.');
       navigation.goBack();
     } catch (error) {
-      console.error('Failed to save income', error);
-      Alert.alert('Error', 'We could not save the income. Please try again.');
+Alert.alert('Error', 'We could not save the income. Please try again.');
     } finally {
       setSaving(false);
     }

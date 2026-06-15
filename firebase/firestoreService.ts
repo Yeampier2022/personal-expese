@@ -7,6 +7,7 @@ import {
   doc,
   query,
   orderBy,
+  where,
   Timestamp,
 } from 'firebase/firestore';
 import { db } from './firebaseConfig';
@@ -16,8 +17,12 @@ const COLLECTION = 'transactions';
 
 export type FirestoreTransaction = TransactionProps & { firestoreId: string };
 
-export async function getTransactions(): Promise<FirestoreTransaction[]> {
-  const q = query(collection(db, COLLECTION), orderBy('createdAt', 'desc'));
+export async function getTransactions(userId: string): Promise<FirestoreTransaction[]> {
+  const q = query(
+    collection(db, COLLECTION),
+    where('userId', '==', userId),
+    orderBy('createdAt', 'desc')
+  );
   const snapshot = await getDocs(q);
   return snapshot.docs.map((docSnap) => {
     const data = docSnap.data() as Omit<TransactionProps, 'id'>;
@@ -30,10 +35,12 @@ export async function getTransactions(): Promise<FirestoreTransaction[]> {
 }
 
 export async function createTransaction(
-  transaction: Omit<TransactionProps, 'id'>
+  transaction: Omit<TransactionProps, 'id'>,
+  userId: string
 ): Promise<string> {
   const docRef = await addDoc(collection(db, COLLECTION), {
     ...transaction,
+    userId,
     createdAt: Timestamp.now(),
   });
   return docRef.id;

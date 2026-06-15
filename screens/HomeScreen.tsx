@@ -1,8 +1,10 @@
-import { useCallback, useMemo, useState } from 'react';
-import { Alert, FlatList, SafeAreaView, StyleSheet, Text, View, Pressable } from 'react-native';
+import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
+import { Alert, FlatList, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { auth } from '../firebase/firebaseConfig';
 import { getTransactions, deleteTransaction, FirestoreTransaction } from '../firebase/firestoreService';
+import { logout } from '../firebase/authService';
 
 type RootStackParamList = {
   Home: undefined;
@@ -15,9 +17,13 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 export default function HomeScreen({ navigation }: Props) {
   const [transactions, setTransactions] = useState<FirestoreTransaction[]>([]);
+  const [userName, setUserName] = useState('');
 
   const refreshTransactions = useCallback(async () => {
-    const saved = await getTransactions();
+    const user = auth.currentUser;
+    if (!user) return;
+    setUserName(user.displayName?.split(' ')[0] ?? '');
+    const saved = await getTransactions(user.uid);
     setTransactions(saved);
   }, []);
 
@@ -38,6 +44,29 @@ export default function HomeScreen({ navigation }: Props) {
     [refreshTransactions]
   );
 
+  const handleLogout = useCallback(async () => {
+    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign out',
+        style: 'destructive',
+        onPress: async () => {
+          await logout();
+        },
+      },
+    ]);
+  }, []);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable onPress={handleLogout} style={styles.logoutButton}>
+          <Text style={styles.logoutText}>Sign out</Text>
+        </Pressable>
+      ),
+    });
+  }, [navigation, handleLogout]);
+
   useFocusEffect(
     useCallback(() => {
       refreshTransactions();
@@ -48,20 +77,14 @@ export default function HomeScreen({ navigation }: Props) {
     return transactions.reduce(
       (acc, item) => {
         acc.currentBalance += item.amount;
-
         if (item.isExpense) {
           acc.totalExpenses += Math.abs(item.amount);
         } else {
           acc.totalIncome += Math.abs(item.amount);
         }
-
         return acc;
       },
-      {
-        currentBalance: 0,
-        totalIncome: 0,
-        totalExpenses: 0,
-      }
+      { currentBalance: 0, totalIncome: 0, totalExpenses: 0 }
     );
   }, [transactions]);
 
@@ -77,7 +100,10 @@ export default function HomeScreen({ navigation }: Props) {
           {item.isExpense ? '-' : '+'}${Math.abs(item.amount).toFixed(2)}
         </Text>
         <View style={styles.actionButtons}>
-          <Pressable style={styles.editButton} onPress={() => navigation.navigate('EditTransaction', { transaction: item })}>
+          <Pressable
+            style={styles.editButton}
+            onPress={() => navigation.navigate('EditTransaction', { transaction: item })}
+          >
             <Text style={styles.editButtonText}>✎</Text>
           </Pressable>
           <Pressable style={styles.deleteButton} onPress={() => handleDelete(item)}>
@@ -91,7 +117,9 @@ export default function HomeScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerSection}>
-        <Text style={styles.title}>Finance Tracker</Text>
+        <Text style={styles.title}>
+          Hello, {userName || 'there'} 👋
+        </Text>
         <Text style={styles.subtitle}>Track income and expenses with instant balance.</Text>
       </View>
 
@@ -111,10 +139,16 @@ export default function HomeScreen({ navigation }: Props) {
       </View>
 
       <View style={styles.actionRow}>
-        <Pressable style={[styles.actionButton, styles.expenseButton]} onPress={() => navigation.navigate('AddExpense')}>
+        <Pressable
+          style={[styles.actionButton, styles.expenseButton]}
+          onPress={() => navigation.navigate('AddExpense')}
+        >
           <Text style={styles.actionButtonText}>Add Expense</Text>
         </Pressable>
-        <Pressable style={[styles.actionButton, styles.incomeButton]} onPress={() => navigation.navigate('AddIncome')}>
+        <Pressable
+          style={[styles.actionButton, styles.incomeButton]}
+          onPress={() => navigation.navigate('AddIncome')}
+        >
           <Text style={styles.actionButtonText}>Add Income</Text>
         </Pressable>
       </View>
@@ -125,15 +159,15 @@ export default function HomeScreen({ navigation }: Props) {
 
       <FlatList
         data={transactions}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.firestoreId}
         renderItem={renderTransaction}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No transactions saved yet.</Text>
-            <Text style={styles.emptyStateSubtext}>Agrega un ingreso o gasto para comenzar.</Text>
+            <Text style={styles.emptyStateText}>No transactions yet.</Text>
+            <Text style={styles.emptyStateSubtext}>Add an income or expense to get started.</Text>
           </View>
         }
       />
@@ -148,41 +182,18 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     backgroundColor: '#f5f7fb',
   },
-  headerSection: {
-    marginBottom: 18,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  subtitle: {
-    fontSize: 15,
-    color: '#4b5563',
-    marginTop: 6,
-  },
+  headerSection: { marginBottom: 18 },
+  title: { fontSize: 28, fontWeight: '700', color: '#111827' },
+  subtitle: { fontSize: 15, color: '#4b5563', marginTop: 6 },
   balanceCard: {
     backgroundColor: '#111827',
     borderRadius: 24,
     padding: 20,
     marginBottom: 20,
   },
-  balanceLabel: {
-    color: '#cbd5e1',
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  balanceValue: {
-    color: '#ffffff',
-    fontSize: 32,
-    fontWeight: '800',
-    marginBottom: 18,
-  },
-  balanceStatsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
+  balanceLabel: { color: '#cbd5e1', fontSize: 14, marginBottom: 8 },
+  balanceValue: { color: '#ffffff', fontSize: 32, fontWeight: '800', marginBottom: 18 },
+  balanceStatsRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
   balanceStatBox: {
     flex: 1,
     backgroundColor: 'rgba(255,255,255,0.08)',
@@ -190,22 +201,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
   },
-  balanceStatLabel: {
-    color: '#cbd5e1',
-    fontSize: 12,
-    marginBottom: 4,
-  },
-  balanceStatValue: {
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-    gap: 12,
-  },
+  balanceStatLabel: { color: '#cbd5e1', fontSize: 12, marginBottom: 4 },
+  balanceStatValue: { color: '#ffffff', fontWeight: '700', fontSize: 16 },
+  actionRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, gap: 12 },
   actionButton: {
     flex: 1,
     borderRadius: 16,
@@ -213,32 +211,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  expenseButton: {
-    backgroundColor: '#f97316',
-  },
-  incomeButton: {
-    backgroundColor: '#059669',
-  },
-  actionButtonText: {
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 15,
-  },
+  expenseButton: { backgroundColor: '#f97316' },
+  incomeButton: { backgroundColor: '#059669' },
+  actionButtonText: { color: '#ffffff', fontWeight: '700', fontSize: 15 },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  listContent: {
-    paddingBottom: 20,
-    flexGrow: 1,
-  },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
+  listContent: { paddingBottom: 20, flexGrow: 1 },
   transactionCard: {
     backgroundColor: '#ffffff',
     borderRadius: 18,
@@ -248,83 +231,38 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  transactionInfo: {
-    flex: 1,
-    paddingRight: 12,
-  },
-  transactionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  transactionCategory: {
-    fontSize: 13,
-    color: '#6b7280',
-    marginBottom: 4,
-  },
-  transactionDate: {
-    fontSize: 12,
-    color: '#9ca3af',
-  },
-  transactionRight: {
-    alignItems: 'flex-end',
-    gap: 8,
-  },
-  transactionAmount: {
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 6,
-  },
+  transactionInfo: { flex: 1, paddingRight: 12 },
+  transactionTitle: { fontSize: 16, fontWeight: '700', color: '#111827', marginBottom: 4 },
+  transactionCategory: { fontSize: 13, color: '#6b7280', marginBottom: 4 },
+  transactionDate: { fontSize: 12, color: '#9ca3af' },
+  transactionRight: { alignItems: 'flex-end', gap: 8 },
+  transactionAmount: { fontSize: 16, fontWeight: '800' },
+  income: { color: '#059669' },
+  expense: { color: '#dc2626' },
+  actionButtons: { flexDirection: 'row', gap: 6 },
   editButton: {
     backgroundColor: '#dbeafe',
     borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  editButtonText: {
-    color: '#2563eb',
-    fontSize: 12,
-    fontWeight: '700',
-  },
+  editButtonText: { color: '#2563eb', fontSize: 12, fontWeight: '700' },
   deleteButton: {
     backgroundColor: '#fee2e2',
     borderRadius: 10,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  deleteButtonText: {
-    color: '#dc2626',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  income: {
-    color: '#059669',
-  },
-  expense: {
-    color: '#dc2626',
-  },
-  separator: {
-    height: 10,
-  },
+  deleteButtonText: { color: '#dc2626', fontSize: 12, fontWeight: '700' },
+  separator: { height: 10 },
   emptyState: {
     backgroundColor: '#ffffff',
     borderRadius: 18,
     padding: 20,
     alignItems: 'center',
   },
-  emptyStateText: {
-    fontSize: 16,
-    color: '#111827',
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-  emptyStateSubtext: {
-    color: '#6b7280',
-    fontSize: 13,
-    textAlign: 'center',
-  },
+  emptyStateText: { fontSize: 16, color: '#111827', fontWeight: '700', marginBottom: 6 },
+  emptyStateSubtext: { color: '#6b7280', fontSize: 13, textAlign: 'center' },
+  logoutButton: { paddingHorizontal: 4 },
+  logoutText: { color: '#ffffff', fontSize: 14, fontWeight: '600' },
 });

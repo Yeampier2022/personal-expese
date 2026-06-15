@@ -45,8 +45,7 @@ export default function EditTransactionScreen({ navigation, route }: Props) {
       Alert.alert('Updated', 'Transaction updated successfully.');
       navigation.goBack();
     } catch (error) {
-      console.error('Failed to update transaction', error);
-      Alert.alert('Error', 'Could not update the transaction. Please try again.');
+Alert.alert('Error', 'Could not update the transaction. Please try again.');
     } finally {
       setSaving(false);
     }
