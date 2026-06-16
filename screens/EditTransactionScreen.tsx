@@ -42,7 +42,6 @@ export default function EditTransactionScreen({ navigation, route }: Props) {
         amount: transaction.isExpense ? -parsedAmount : parsedAmount,
       });
 
-      Alert.alert('Updated', 'Transaction updated successfully.');
       navigation.goBack();
     } catch (error) {
 Alert.alert('Error', 'Could not update the transaction. Please try again.');

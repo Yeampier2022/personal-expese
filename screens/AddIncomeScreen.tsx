@@ -43,7 +43,6 @@ export default function AddIncomeScreen({ navigation }: Props) {
         isExpense: false,
       }, userId);
 
-      Alert.alert('Saved', 'Your income was saved.');
       navigation.goBack();
     } catch (error) {
 Alert.alert('Error', 'We could not save the income. Please try again.');

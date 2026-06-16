@@ -42,7 +42,6 @@ export default function AddExpenseScreen({ navigation }: Props) {
         isExpense: true,
       }, userId);
 
-      Alert.alert('Saved', 'Your expense was saved.');
       navigation.goBack();
     } catch (error) {
 Alert.alert('Error', 'We could not save the expense. Please try again.');

@@ -6,7 +6,6 @@ import {
   updateDoc,
   doc,
   query,
-  orderBy,
   where,
   Timestamp,
 } from 'firebase/firestore';
@@ -20,17 +19,21 @@ export type FirestoreTransaction = TransactionProps & { firestoreId: string };
 export async function getTransactions(userId: string): Promise<FirestoreTransaction[]> {
   const q = query(
     collection(db, COLLECTION),
-    where('userId', '==', userId),
-    orderBy('createdAt', 'desc')
+    where('userId', '==', userId)
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((docSnap) => {
-    const data = docSnap.data() as Omit<TransactionProps, 'id'>;
+  const docs = snapshot.docs.map((docSnap) => {
+    const data = docSnap.data() as Omit<TransactionProps, 'id'> & { createdAt?: { seconds: number } };
     return {
       firestoreId: docSnap.id,
       id: docSnap.id,
       ...data,
     };
+  });
+  return docs.sort((a, b) => {
+    const aTime = (a as any).createdAt?.seconds ?? 0;
+    const bTime = (b as any).createdAt?.seconds ?? 0;
+    return bTime - aTime;
   });
 }
 
